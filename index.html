@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态生成海量文案工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#ff2442',
+                        neutral: '#f9fafb',
+                        dark: '#1f2937',
+                    },
+                    fontFamily: {
+                        sans: ['PingFang SC', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            }
+            .btn-hover {
+                transition: all 0.3s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen font-sans text-dark">
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-[clamp(1.2rem,5vw,1.5rem)] font-bold text-primary flex items-center">
+                <i class="fa fa-diamond mr-2"></i>
+                动态文案
+            </h1>
+            <span class="bg-primary text-white text-xs px-2 py-1 rounded-full">
+                合肥梳妆台饰品
+            </span>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <!-- 文案展示区 -->
+        <div class="bg-neutral rounded-2xl p-6 mb-6 card-shadow">
+            <div class="flex items-center mb-4">
+                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                    <i class="fa fa-comment"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="font-medium">生成的文案</p>
+                    <p class="text-xs text-gray-500">随机组合核心信息，自动生成多样化内容</p>
+                </div>
+            </div>
+            
+            <div id="copyContent" class="min-h-[180px] mb-6 leading-relaxed text-base p-4 bg-white rounded-xl">
+                合肥的姐妹们，发现一家超赞的饰品店！就在火车站地铁口300米，他们家的珍珠发夹也太好看了吧～ 款式超多，随便试戴，喜欢的可以直接入手！<br><br>
+                #合肥梳妆台 #梳妆台潮品饰品 #合肥探店 #珍珠发夹 #宝藏店铺
+            </div>
+            
+            <div class="flex space-x-4">
+                <button id="refreshBtn" class="flex-1 bg-white border border-gray-200 hover:border-primary/30 text-primary font-medium py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center btn-hover">
+                    <i class="fa fa-refresh mr-2"></i> 换一条
+                </button>
+                <button id="copyBtn" class="flex-1 bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md shadow-primary/20 btn-hover">
+                    <i class="fa fa-copy mr-2"></i> 复制文案
+                </button>
+            </div>
+        </div>
+
+        <!-- 核心信息说明 -->
+        <div class="bg-neutral rounded-2xl p-5 mb-6 card-shadow">
+            <h3 class="font-bold mb-3 flex items-center">
+                <i class="fa fa-info-circle text-primary mr-2"></i>
+                核心信息模块
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                <div class="bg-white p-3 rounded-xl">
+                    <p class="text-gray-500">地点信息</p>
+                    <p>合肥火车站地铁口300米</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl">
+                    <p class="text-gray-500">规模信息</p>
+                    <p>4000平卖场</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl">
+                    <p class="text-gray-500">优惠信息</p>
+                    <p>会员省30%-60%</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl">
+                    <p class="text-gray-500">体验信息</p>
+                    <p>可试戴</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl">
+                    <p class="text-gray-500">商品信息</p>
+                    <p>梳妆台饰品（珍珠发夹/项链/耳环）</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">每次生成随机抽取1-2个核心信息进行组合</p>
+        </div>
+    </main>
+
+    <!-- 复制提示 -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-dark text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity duration-300 flex items-center z-50">
+        <i class="fa fa-check-circle mr-2"></i>
+        <span>复制成功！</span>
+    </div>
+
+    <script>
+        // 核心信息模块 - 每次随机抽取1-2个
+        const coreInfo = [
+            "合肥火车站地铁口300米",
+            "4000平超大卖场",
+            "会员能省30%-60%",
+            "可以随便试戴",
+            "珍珠发夹款式超全",
+            "项链设计很独特",
+            "耳环种类特别多",
+            "梳妆台饰品应有尽有"
+        ];
+        
+        // 引导句模块
+        const openingLines = [
+            "合肥的姐妹们看过来！",
+            "发现一家宝藏饰品店～",
+            "谁还不知道这家店啊！",
+            "合肥探店打卡～",
+            "今天逛到一家超赞的店！",
+            "在合肥发现好店分享～",
+            "姐妹们，这家店一定要去！",
+            "合肥购物新发现～",
+            "被朋友安利的店果然不错！",
+            "终于找到这家店了！",
+            "来合肥千万别错过～",
+            "本地人才知道的店～",
+            "合肥逛街好去处～",
+            "周末探店分享～",
+            "这家饰品店太可了！"
+        ];
+        
+        // 描述性语句模块
+        const descriptions = [
+            "款式真的超多，挑到眼花缭乱～",
+            "性价比绝了，买了好几件都不心疼～",
+            "质感很好，比网购靠谱多了～",
+            "设计很独特，不容易撞款～",
+            "服务也超赞，不会过分推销～",
+            "环境很好，逛着特别舒服～",
+            "随便搭配都好看，太喜欢了～",
+            "每次来都有新发现，忍不住剁手～",
+            "从少女到宝妈都能找到合适的～",
+            "价格很亲民，学生党也能轻松入手～",
+            "做工很精致，细节处理得很好～",
+            "种类齐全，一站式购齐超方便～",
+            "戴上超显气质，朋友都问在哪买的～",
+            "通勤约会都合适，实用性很高～",
+            "颜值爆表，拍照超上镜～"
+        ];
+        
+        // 辅助话题池（根据内容自动匹配）
+        const topics = {
+            location: ["#合肥探店", "#火车站周边", "#合肥打卡", "#合肥逛街", "#合肥好去处"],
+            scale: ["#超大卖场", "#一站式购物", "#逛到爽", "#品类齐全"],
+            discount: ["#会员福利", "#省钱攻略", "#性价比", "#优惠活动", "#便宜好货"],
+            experience: ["#试戴体验", "#购物体验", "#实体店优势", "#放心买"],
+            hairpin: ["#珍珠发夹", "#发饰分享", "#头饰推荐", "#精致发夹"],
+            necklace: ["#项链分享", "#锁骨链", "#颈饰推荐", "#百搭项链"],
+            earrings: ["#耳环控", "#耳饰分享", "#耳钉推荐", "#气质耳环"],
+            general: ["#宝藏店铺", "#女生必逛", "#饰品分享", "#好物推荐", "#周末去哪儿"]
+        };
+        
+        // 根据核心信息匹配相关话题
+        function getRelevantTopics(selectedInfo) {
+            const topicSet = new Set();
+            
+            // 为每个选中的核心信息匹配话题
+            selectedInfo.forEach(info => {
+                if (info.includes("火车站")) {
+                    addRandomTopics(topicSet, topics.location, 1);
+                }
+                if (info.includes("4000平")) {
+                    addRandomTopics(topicSet, topics.scale, 1);
+                }
+                if (info.includes("省30%")) {
+                    addRandomTopics(topicSet, topics.discount, 1);
+                }
+                if (info.includes("试戴")) {
+                    addRandomTopics(topicSet, topics.experience, 1);
+                }
+                if (info.includes("珍珠发夹")) {
+                    addRandomTopics(topicSet, topics.hairpin, 1);
+                }
+                if (info.includes("项链")) {
+                    addRandomTopics(topicSet, topics.necklace, 1);
+                }
+                if (info.includes("耳环")) {
+                    addRandomTopics(topicSet, topics.earrings, 1);
+                }
+                if (info.includes("梳妆台饰品")) {
+                    addRandomTopics(topicSet, topics.general, 1);
+                }
+            });
+            
+            // 如果话题太少，从通用话题补充
+            while (topicSet.size < 2) {
+                addRandomTopics(topicSet, topics.general, 1);
+            }
+            
+            // 转换为数组并添加固定话题
+            const result = Array.from(topicSet);
+            result.unshift("#梳妆台潮品饰品");
+            result.unshift("#合肥梳妆台");
+            
+            return result.join(" ");
+        }
+        
+        // 从话题池中随机添加话题
+        function addRandomTopics(set, topicPool, count) {
+            for (let i = 0; i < count; i++) {
+                const randomTopic = topicPool[Math.floor(Math.random() * topicPool.length)];
+                set.add(randomTopic);
+            }
+        }
+        
+        // 随机选择指定数量的元素
+        function getRandomItems(arr, count) {
+            const shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+        
+        // 生成随机文案
+        function generateRandomCopy() {
+            // 随机选择1-2个核心信息
+            const infoCount = Math.floor(Math.random() * 2) + 1;
+            const selectedInfo = getRandomItems(coreInfo, infoCount);
+            
+            // 随机选择引导句和描述句
+            const opening = openingLines[Math.floor(Math.random() * openingLines.length)];
+            const description = descriptions[Math.floor(Math.random() * descriptions.length)];
+            
+            // 组合信息部分
+            let infoText = "";
+            selectedInfo.forEach((info, index) => {
+                if (index === 0) {
+                    infoText += `就在${info}，`;
+                } else {
+                    infoText += `而且${info}，`;
+                }
+            });
+            
+            // 构建完整文案
+            let fullText = `${opening} ${infoText}${description}<br><br>${getRelevantTopics(selectedInfo)}`;
+            
+            return fullText;
+        }
+        
+        // DOM元素
+        const copyContent = document.getElementById('copyContent');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toast');
+        
+        // 刷新文案
+        refreshBtn.addEventListener('click', () => {
+            refreshBtn.classList.add('scale-95');
+            setTimeout(() => {
+                refreshBtn.classList.remove('scale-95');
+            }, 200);
+            
+            copyContent.classList.add('opacity-0');
+            setTimeout(() => {
+                copyContent.innerHTML = generateRandomCopy();
+                copyContent.classList.remove('opacity-0');
+            }, 100);
+        });
+        
+        // 复制文案
+        copyBtn.addEventListener('click', () => {
+            copyBtn.classList.add('scale-95');
+            setTimeout(() => {
+                copyBtn.classList.remove('scale-95');
+            }, 200);
+            
+            const textToCopy = copyContent.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                toast.style.opacity = '1';
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                }, 3000);
+            }).catch(err => {
+                console.error('复制失败: ', err);
+                alert('复制失败，请手动复制');
+            });
+        });
+        
+        // 初始生成一条文案
+        window.addEventListener('DOMContentLoaded', () => {
+            copyContent.innerHTML = generateRandomCopy();
+        });
+    </script>
+</body>
+</html>
+    
